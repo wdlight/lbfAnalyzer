@@ -1,0 +1,80 @@
+import mmap
+index=0
+
+#filename below need to be adjusted for the target file
+filename=f"LGBackup_191019.lbf"
+
+
+def read_in_chunks(file_object, chunk_size=1024):
+    """Lazy function (generator) to read a file piece by piece.
+    Default chunk size: 1k."""
+    
+    
+    while True:
+        data = file_object.read(chunk_size)
+        
+        check_pos = data.find( b'PK\x03\x04' )
+        
+        if not data:
+            break
+        else :
+            yield data
+     
+
+
+def find_in_file(f,signature, startpos, targetFile):
+    prev=b''
+    chunk_size=2**20
+
+    
+ 
+    for i,cur in enumerate(read_in_chunks(f,chunk_size)):
+        searchee=prev+cur
+        pos=searchee.find(signature)
+        
+        if pos>=0:
+            if isFound > 0 :
+                tf = open ( targetFile, "wb" )
+                tf.write (b'P')
+                tf.write ( searchee[: - (chunk_size - pos)] )
+            return i*chunk_size+pos-len(prev)+startpos
+        prev=cur
+        
+        
+    else:
+        return -1
+
+with open(filename,"rb") as backup:   
+    starpos=0
+    isFound = 0
+    while True:
+        print ( "backup_starpos : " + str(starpos) )
+
+
+        index+=1
+        filename=f"{index}.broken.zip"
+        print ( filename )
+        
+        #with open(filename,"wb") as nextfile:
+            #for chunk in slice_in_chunks(backup,2**20):
+            #    nextfile.write(chunk)
+
+        
+        pos=find_in_file(backup, b'PK\x03\x04',starpos , filename)
+        print ( "find position: <" + str(pos) + ">")
+        if pos<0:
+            break
+        isFound += 1
+        
+        print( "current cursor position : " + str( backup.tell() ) + ",  cur_pos" + str(pos) )
+        backup.seek(pos)
+        print( " rollback cursor to first Find Position : " + str( backup.tell()))
+        
+        
+        
+        # current file pointer is pointing "PK~" so just proceed 1  to find next "PK~" series.
+        # so when we write the separate file b'P' need to be written ( in the file_in_file )
+        starpos=pos + 1
+        backup.seek(starpos)
+        print("End of " + str(index)+"st Search " + str( backup.tell() ))
+        print()
